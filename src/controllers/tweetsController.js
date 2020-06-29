@@ -61,16 +61,22 @@ function editTweet(req, res){
     }
 }
 
-function viewTweets(req, res){
+function viewTweets(req, res){ 
     var userId = req.user.sub;
     var params = req.body.commands; 
     var command = params.split('-');
 
     if(command[1]){
         Usuario.findOne({user: {$regex: command[1], $options: "i"}} , (err, tweetsEncontrado)=>{
-            if(err) return res.status(500).send({ message: 'error en la peticion de tweets' })
-            if(!tweetsEncontrado) return res.status(404).send({ message: 'no se han podido listar los tweets' })    
-            return res.status(200).send({Message: "Tweets de " + tweetsEncontrado.user, Tweets: tweetsEncontrado.tweets})  
+            Usuario.findOne({_id: userId, 'following._id': tweetsEncontrado._id}, (err, userEncontrado)=>{
+                   if(userEncontrado == null && tweetsEncontrado._id != userId){
+                    return res.status(200).send({Message: "Debe de seguir a este usuario para poder ver sus Tweets"})  
+                   }else{
+                    if(err) return res.status(500).send({ message: 'error en la peticion de tweets' })
+                    if(!tweetsEncontrado) return res.status(404).send({ message: 'no se han podido listar los tweets' })    
+                    return res.status(200).send({Message: "Tweets de " + tweetsEncontrado.user, Tweets: tweetsEncontrado.tweets})  
+                   }
+                })
         })
     }else{
         return res.status(400).send({message:"Complete los datos"})

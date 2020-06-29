@@ -49,7 +49,6 @@ function login(req, res){
         Usuario.findOne({user: command[1]}, (err, userLog)=>{
             if(err) return res.status(400).send({ message: 'Error en la peticion'}) 
                if(userLog){
-                   console.log(userLog)
                    bcrypt.compare(command[2], userLog.password, (err, check)=>{
                        //console.log(check)
                        if(err) return res.status(500).send({message: "Error Inesperado"})
@@ -73,16 +72,18 @@ function login(req, res){
     }
 }
 
-function profile(req, res){
+function profile(req, res){ //numero de seguidores y seguidos
     var params = req.body.commands; 
     var command = params.split("-");
 
     if(command[1]){
-        Usuario.findOne(
-            {user: {$regex: command[1], $options: "i"}} , (err, perfilEncontrado)=>{
+        Usuario.findOne({user: {$regex: command[1], $options: "i"}} , (err, perfilEncontrado)=>{
             if(err) return res.status(500).send({ message: 'error en la peticion del usuario' })
-            if(!perfilEncontrado) return res.status(404).send({ message: 'El usuario no existe :(' })    
-            return res.status(200).send({Message: "Perfil de " + perfilEncontrado.user, perfilEncontrado})  
+            if(!perfilEncontrado) return res.status(404).send({ message: 'El usuario no existe :(' })   
+            return res
+            .status(200).send({Message: "Perfil de " + perfilEncontrado.user 
+            +  " | Usted sigue a " + perfilEncontrado.following.length + " Usuarios"
+            + " |  Cuenta con " + perfilEncontrado.followers.length + " seguidor(es)", perfilEncontrado})  
         })
     }else{
         return res.status(400).send({message:"Complete los datos"})
@@ -148,6 +149,22 @@ function unfollow(req, res){
         return res.status(400).send({message:"Complete los datos"})
     }
 }
+/*
+function updateAmountFollows(req, res){
+    Usuario.findById(req.user.sub , (err, perfilEncontrado)=>{   
+        Usuario.findByIdAndUpdate(req.user.sub,{amountFollowing:perfilEncontrado.following.length},
+            {new: true}, (err, userFollow)=>{
+        })
+    })
+}
+
+function updateAmountFollowers(req, res, id){
+    Usuario.findById(id, (err, perfilEncontrado)=>{   
+        Usuario.findByIdAndUpdate(id,{amountFollowers:perfilEncontrado.followers.length},
+            {new: true}, (err, userFollow)=>{
+        })
+    })
+}*/
 
 function followersPositive(req,id){
     var userId = req.user.sub;
