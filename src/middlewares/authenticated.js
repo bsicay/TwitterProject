@@ -7,8 +7,8 @@ var moment = require("moment")
 
 exports.ensureAuth = function (req, res, next){
     var params = req.body.commands; 
-    var keyWord = params.split('-');
-
+    var keyWord = params.split(' ');
+    
     if(!req.headers.authorization){
         if(keyWord[0].toLowerCase() == 'register' || keyWord[0].toLowerCase() == 'login'){
             next();

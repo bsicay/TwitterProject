@@ -1,15 +1,13 @@
 'use strict'
 
 var Usuario = require('../models/user')
-var bcrypt = require("bcrypt-nodejs");
-var jwt = require("../services/jwt");
 var user = require("../controllers/userController");
 var tweet = require("../controllers/tweetsController");
 
 
 function commands(req, res){
     var params = req.body.commands; 
-    var position = params.split('-');
+    var position = params.split(' ');
     switch(position[0].toLowerCase()){
         case 'register': 
             user.addUser(req, res);
@@ -39,9 +37,8 @@ function commands(req, res){
             user.unfollow(req, res);
         break;
         default:
-            return res.status(200).send({message:"COMANDO NO VALIDO"})   
+            return res.status(200).send({message:"COMANDO NO VALIDO!!!"})   
     }
-
 }
 
 module.exports = {

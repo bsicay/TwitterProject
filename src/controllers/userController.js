@@ -7,10 +7,10 @@ var jwt = require("../services/jwt");
 function addUser(req, res){
     var usuario = new Usuario();
     var params = req.body.commands; 
-    var command = params.split('-');
+    var command = params.split(' ');
+
     if(command[1]  && command[2]){
         usuario.user = command[1];
-        usuario.password = command[2];
         Usuario.find({$or:[ 
             {user: command[1]},
             {password: command[2]}
@@ -37,12 +37,11 @@ function addUser(req, res){
             message: 'Rellene todos los datos necesarios'
         })
     }
-  
 }
 
 function login(req, res){
     var params = req.body.commands; 
-    var command = params.split("-");
+    var command = params.split(" ");
     var boolValue = (command[3] == "true")
 
     if(command[1] && command[2]){
@@ -74,7 +73,7 @@ function login(req, res){
 
 function profile(req, res){ //numero de seguidores y seguidos
     var params = req.body.commands; 
-    var command = params.split("-");
+    var command = params.split(" ");
 
     if(command[1]){
         Usuario.findOne({user: {$regex: command[1], $options: "i"}} , (err, perfilEncontrado)=>{
@@ -82,8 +81,8 @@ function profile(req, res){ //numero de seguidores y seguidos
             if(!perfilEncontrado) return res.status(404).send({ message: 'El usuario no existe :(' })   
             return res
             .status(200).send({Message: "Perfil de " + perfilEncontrado.user 
-            +  " | Usted sigue a " + perfilEncontrado.following.length + " Usuarios"
-            + " |  Cuenta con " + perfilEncontrado.followers.length + " seguidor(es)", perfilEncontrado})  
+            +  " | Sigue a " + perfilEncontrado.following.length + " Usuarios"
+            + " | Cuenta con " + perfilEncontrado.followers.length + " seguidor(es)", perfilEncontrado})  
         })
     }else{
         return res.status(400).send({message:"Complete los datos"})
@@ -92,7 +91,7 @@ function profile(req, res){ //numero de seguidores y seguidos
 
 function follow(req, res){
     var params = req.body.commands; 
-    var command = params.split('-');
+    var command = params.split(' ');
     var userId = req.user.sub
 
     if(command[1]){
@@ -126,7 +125,7 @@ function follow(req, res){
 function unfollow(req, res){
     var userId = req.user.sub;
     var params = req.body.commands; 
-    var command = params.split('-');
+    var command = params.split(' ');
 
     if(command[1]){
         Usuario.findOne({user: {$regex: command[1], $options: "i"}} , (err, perfilEncontrado)=>{
@@ -149,6 +148,7 @@ function unfollow(req, res){
         return res.status(400).send({message:"Complete los datos"})
     }
 }
+
 /*
 function updateAmountFollows(req, res){
     Usuario.findById(req.user.sub , (err, perfilEncontrado)=>{   
@@ -178,7 +178,6 @@ function followersNegative(req,id){
     Usuario.findByIdAndUpdate(id, {$pull:{followers:{_id: userId}}},{new: true}, (err, userFollow)=>{
         })
 }
-
 
 module.exports = {
     addUser,
