@@ -47,7 +47,7 @@ function deteleTweet(req, res){
                     return res.status(200).send({message: "Tweet Eliminado con Exito!!!"})
                 })
             }else{
-                return res.status(200).send({message: 'El tweet no existe'});
+                return res.status(200).send({message: 'El tweet no existe :(('});
             }
         })
     }else{
@@ -71,8 +71,8 @@ function editTweet(req, res){
         }
         Usuario.findOneAndUpdate({_id: userId, 'tweets._id': tweetId},{'tweets.$.Descripcion': newTweet}, {new:true}, (err, tweetEditado)=>{
             if(err) return res.status(500).send({message: 'Error en la peticion del tweet'})
-            if(!tweetEditado) return res.status(404).send({message: 'Error al editar el tweet seleccionado'})
-            return res.status(200).send({NuevoTweet: tweetEditado})
+            if(!tweetEditado) return res.status(404).send({message: 'Este tweet no existe :(('})
+            return res.status(200).send({message: "Tweet editado con exito!!"})
         })
     }else{
         return res.status(400).send({message:"Complete los datos"})
