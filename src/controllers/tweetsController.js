@@ -207,7 +207,7 @@ function replyTweet(req, res){
 
     if(command[1] && command[2]){
         if(command.length>=3){
-            for(let i=2; i<command.length; i++){
+            for(let i=3; i<command.length; i++){
                 comentario = comentario + " " + command[i]  
             }
         }
