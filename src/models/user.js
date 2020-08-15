@@ -6,9 +6,7 @@ var Schema = mongoose.Schema;
 var UserSchema = Schema({
     user: String, 
     password: String,
-    tweets: [{
-        Descripcion: String
-    }],
+    like: Boolean,
     followers: [{
         User: String
     }],

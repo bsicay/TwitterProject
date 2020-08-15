@@ -36,6 +36,15 @@ function commands(req, res){
         case 'unfollow':
             user.unfollow(req, res);
         break;
+        case 'like_tweet':
+            tweet.likeTweet(req, res);
+        break;
+        case 'dislike_tweet':
+            tweet.dislikeTweet(req, res);
+        break;
+        case 'reply_tweet':
+            tweet.replyTweet(req, res);
+        break;
         default:
             return res.status(200).send({message:"COMANDO NO VALIDO!!!"})   
     }

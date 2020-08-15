@@ -3,6 +3,7 @@
 var Usuario = require('../models/user')
 var bcrypt = require("bcrypt-nodejs");
 var jwt = require("../services/jwt");
+const tweets = require('../models/tweets');
 
 function addUser(req, res){
     var usuario = new Usuario();
