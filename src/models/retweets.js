@@ -5,10 +5,11 @@ var Schema = mongoose.Schema;
 
 var RetweetsSchema = Schema({
     tweet: String,
-    comentario: Number,
-    nombreUsuario: String, 
+    comentario: String,
+    nombreRetweet: String,
+    usuarioOriginal: String, 
+    nombreOriginal: String,
     usuario: { type: Schema.ObjectId, ref: 'user'},
-    nombreUsuario: String
 })
 
 module.exports = mongoose.model('retweets', RetweetsSchema)

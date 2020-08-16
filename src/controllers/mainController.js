@@ -45,6 +45,9 @@ function commands(req, res){
         case 'reply_tweet':
             tweet.replyTweet(req, res);
         break;
+        case 'retweet':
+            tweet.retweet(req, res);
+        break;
         default:
             return res.status(200).send({message:"COMANDO NO VALIDO!!!"})   
     }

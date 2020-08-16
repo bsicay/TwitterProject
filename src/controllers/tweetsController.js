@@ -2,9 +2,10 @@
 
 var Usuario = require('../models/user');
 var Tweet = require('../models/tweets');
+var Retweet = require('../models/retweets')
 var bcrypt = require("bcrypt-nodejs");
 var jwt = require("../services/jwt");
-const { find } = require('../models/user');
+
 
 
 function addTweet(req, res){
@@ -198,6 +199,8 @@ function dislikeTweet(req, res){
     }
 }
 
+
+
 function replyTweet(req, res){
     var userId = req.user.sub;
     var params = req.body.commands; 
@@ -233,6 +236,116 @@ function replyTweet(req, res){
     }
 }
 
+function retweet(req, res){
+    var retweet = new Retweet();
+    var params = req.body.commands;
+    var command = params.split(' ');
+    var id = req.user.sub;
+    var tweetId = command[1];
+    var comentario = command[2];
+
+    if(command[1]){
+        Tweet.findOne({_id: tweetId}, (err, findedTweet) =>{
+            if(err) return res.status(404).send({ message: 'Error al encontrar el tweet'})
+            if(!findedTweet) return res.status(500).send({ message: 'EL tweet no existe'})
+            Usuario.findOne({_id: id, 'following._id': findedTweet.usuario}, (err, userEncontrado)=>{
+                if (err) res.status(500).send({ message: 'error en la peticion de tweets' })
+                if(userEncontrado == null){
+                    if(findedTweet.usuario == id) return res.status(200).send({Message: "No puede dar retweet a su propio tweet"})  
+                    return res.status(200).send({Message: "Debe de seguir a este usuario para poder dar retweetear sus Tweets"}) 
+                }
+                Retweet.find({usuario: id}, (err, encontrado) =>{
+                    if(encontrado.length >=1){
+                        Retweet.findOneAndDelete({usuario: id}, (err, retweetEliminado)=>{
+                            if(err) return res.status(500).send({message: 'Error en la peticion del tweet'})
+                            if(!retweetEliminado) return res.status(404).send({message: 'No se ha encontrado el tweet'})
+                            return res.status(200).send({message: "Retweet Eliminado con Exito!!!"})
+                        })
+                     }else{
+                        if(command.length>=3){
+                            console.log(command.length)
+                            for(let i=3; i<command.length;i++){
+                                comentario = comentario + " " + command[i]
+                            }
+                        }
+                        retweet.tweet = findedTweet.Descripcion;
+                        retweet.comentario = comentario;
+                        retweet.nombreRetweet = userEncontrado.user;
+                        retweet.usuarioOriginal = findedTweet.usuario; 
+                        retweet.nombreOriginal = findedTweet.nombreUsuario;
+                        retweet.usuario = id;
+                        retweet.save((err, retweetGuardado)=>{
+                            if(err) return res.status(500).send({ message: 'Error al guardar el tweet'})
+                            if(retweetGuardado){
+                                res.status(200).send({message: "Retweeteado con exito!!"})
+                            }else{
+                                res.status(404).send({message: 'Fallo al hacer el retweet'})
+                            }
+                        })
+                     }
+                 })
+            })
+        })
+    }else{
+        res.status(200).send({
+            message: 'Rellene todos los datos necesarios'
+        })
+    }    
+}
+
+// function retweet(req, res){
+//     var retweet = new Retweet();
+//     var params = req.body.commands;
+//     var command = params.split(' ');
+//     var id = req.user.sub;
+//     var tweetId = command[1];
+//     var comentario = command[2];
+
+//     if(command[1]){
+//         Usuario.findById(id, (err, userEncontrado) => {
+//             if(err) return res.status(404).send({ message: 'Error al encontrar al usuario'})
+//             if(!userEncontrado) return res.status(500).send({ message: 'EL usuario no existe'})
+//             if(command.length>=3){
+//                 for(let i=3; i<command.length;i++){
+//                     comentario = comentario + " " + command[i]
+//                 }
+//             }
+//             Retweet.find({usuario: id}, (err, encontrado) =>{
+//                 if(encontrado.length >=1){
+//                     Retweet.findOneAndDelete({usuario: id}, (err, retweetEliminado)=>{
+//                         if(err) return res.status(500).send({message: 'Error en la peticion del tweet'})
+//                         if(!retweetEliminado) return res.status(404).send({message: 'Error al eliminar el tweet'})
+//                         return res.status(200).send({message: "Retweet Eliminado con Exito!!!"})
+//                     })
+//                 }else{
+//                     Tweet.findOne({_id: tweetId}, (err, findedTweet) =>{
+//                         retweet.tweet = findedTweet.Descripcion;
+//                         retweet.comentario = comentario;
+//                         retweet.nombreRetweet = userEncontrado.user;
+//                         retweet.usuarioOriginal = findedTweet.usuario; 
+//                         retweet.nombreOriginal = findedTweet.nombreUsuario;
+//                         retweet.usuario = id;
+//                         retweet.save((err, retweetGuardado)=>{
+//                             if(err) return res.status(500).send({ message: 'Error al guardar el tweet'})
+//                             if(retweetGuardado){
+//                                 res.status(200).send({message: "Retweeteado con exito!!"})
+//                             }else{
+//                                 res.status(404).send({message: 'Fallo al hacer el retweet'})
+//                             }
+//                         })
+//                     })
+//                 }
+//             })
+//         })
+//     }else{
+//         res.status(200).send({
+//             message: 'Rellene todos los datos necesarios'
+//         })
+//     }    
+// }
+
+
+
 module.exports = {
     addTweet,
     deteleTweet, 
@@ -240,6 +353,7 @@ module.exports = {
     viewTweets,
     likeTweet,
     dislikeTweet,
-    replyTweet
+    replyTweet,
+    retweet
 }
 
