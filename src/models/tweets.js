@@ -8,8 +8,7 @@ var TweetsSchema = Schema({
     Likes: Number,
     listaReacciones:[{
         idUsuario: { type: Schema.ObjectId, ref: 'user'},
-        nombreUsuario: String,
-        like: Boolean
+        nombreUsuario: String
     }],
     replies:[{
         idUsuario: {type: Schema.ObjectId, ref:'user'},
@@ -17,7 +16,7 @@ var TweetsSchema = Schema({
         comentario: String, 
     }],
     usuario: { type: Schema.ObjectId, ref: 'user'},
-    nombreUsuario: String
+    nombreUsuario: String,
 })
 
 module.exports = mongoose.model('tweets', TweetsSchema)

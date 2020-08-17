@@ -56,10 +56,13 @@ function deteleTweet(req, res){
         Tweet.findOne({_id: tweetId}, (err, tweetEncontrado)=>{
             if(tweetEncontrado){
                 if(tweetEncontrado.usuario != userId) return res.status(500).send({message: 'No cuenta con el permiso de eliminar el tweet :/'})
-                Tweet.findByIdAndDelete(tweetId, (err, tweetEliminado)=>{
-                    if(err) return res.status(500).send({message: 'Error en la peticion del tweet'})
-                    if(!tweetEliminado) return res.status(404).send({message: 'Error al eliminar el tweet'})
-                    return res.status(200).send({message: "Tweet Eliminado con Exito!!!"})
+                Retweet.find({tweet:tweetId}, (err, findedRet)=>{
+                    if(findedRet) eliminarRetweet(req, res,tweetId)
+                    Tweet.findByIdAndDelete(tweetId, (err, tweetEliminado)=>{
+                        if(err) return res.status(500).send({message: 'Error en la peticion del tweet'})
+                        if(!tweetEliminado) return res.status(404).send({message: 'Error al eliminar el tweet'})
+                        return res.status(200).send({message: "Tweet Eliminado con Exito!!!"})
+                    })
                 })
             }else{
                 return res.status(200).send({message: 'El tweet no existe :(('});
@@ -68,6 +71,10 @@ function deteleTweet(req, res){
     }else{
         return res.status(400).send({message:"Complete los datos"})  
     }
+}
+
+function eliminarRetweet(req, res, tweetId){
+    Retweet.deleteMany({tweet:tweetId}).exec();   
 }
 
 function editTweet(req, res){
@@ -104,18 +111,18 @@ function viewTweets(req, res){
     if(command[1]){
         Tweet.findOne({nombreUsuario: {$regex: command[1], $options: "i"}} , (err, tweetsEncontrado)=>{
             if(err) return res.status(500).send({ message: 'error en la peticion de tweets' })
-            if(!tweetsEncontrado) return res.status(500).send({ message: 'Usuario no encontrado'})
-            Tweet.find({nombreUsuario: {$regex: command[1], $options: "i"}}, (err, finded)=>{ 
+            if(!tweetsEncontrado) return res.status(500).send({ message: 'No se han podido listar los tweets'})
                 Usuario.findOne({_id: userId, 'following._id': tweetsEncontrado.usuario}, (err, userEncontrado)=>{
-                       if(userEncontrado == null && tweetsEncontrado.usuario != userId){
+                    if(userEncontrado == null && tweetsEncontrado.usuario != userId){
                         return res.status(200).send({Message: "Debe de seguir a este usuario para poder ver sus Tweets"})
                        }else{
-                        if(err) return res.status(500).send({ message: 'error en la peticion de tweets' })
-                        if(!tweetsEncontrado) return res.status(404).send({ message: 'no se han podido listar los tweets' })
-                        return res.status(200).send({Message: "Tweets de " + tweetsEncontrado.nombreUsuario, Tweets: finded})
+                        Tweet.aggregate([
+                            {$match:{nombreUsuario: {$regex: command[1], $options: "i"}}},{$lookup:{from:"retweets", localField: "_id", foreignField: "tweet", as: "Retweets"}},
+                                {$project:{listaReacciones:0, usuario:0, __v:0, nombreUsuario:0}}], (err, s)=>{
+                                     return res.status(200).send({Tweets: s})
+                        })
                        }
-                    })
-            })
+                })
         })
     }else{
         return res.status(400).send({message:"Complete los datos"})
@@ -145,7 +152,7 @@ function likeTweet(req, res){
                 }
                 if(indice != userId){
                     var likesAmount = findedTweet.Likes + 1;
-                    Tweet.findOneAndUpdate({_id: tweetId},{Likes: likesAmount, $push:{listaReacciones:{idUsuario: userId, nombreUsuario: userEncontrado.user, like:true}}}
+                    Tweet.findOneAndUpdate({_id: tweetId},{Likes: likesAmount, $push:{listaReacciones:{idUsuario: userId, nombreUsuario: userEncontrado.user}}}
                         , {new:true}, (err, likedTweet)=>{ 
                             if(err) return res.status(500).send({message: 'Error en la peticion del tweet'})
                             if(!likedTweet) return res.status(404).send({message: 'Este tweet no existe :(('})
@@ -198,8 +205,6 @@ function dislikeTweet(req, res){
         return res.status(400).send({message:"Complete los datos"})
     }
 }
-
-
 
 function replyTweet(req, res){
     var userId = req.user.sub;
@@ -254,16 +259,15 @@ function retweet(req, res){
                     if(findedTweet.usuario == id) return res.status(200).send({Message: "No puede dar retweet a su propio tweet"})  
                     return res.status(200).send({Message: "Debe de seguir a este usuario para poder dar retweetear sus Tweets"}) 
                 }
-                Retweet.find({usuario: id}, (err, encontrado) =>{
+                Retweet.find({tweet: tweetId, usuario: id}, (err, encontrado) =>{
                     if(encontrado.length >=1){
-                        Retweet.findOneAndDelete({usuario: id}, (err, retweetEliminado)=>{
+                        Retweet.findOneAndDelete({tweet: tweetId, usuario: id}, (err, retweetEliminado)=>{
                             if(err) return res.status(500).send({message: 'Error en la peticion del tweet'})
                             if(!retweetEliminado) return res.status(404).send({message: 'No se ha encontrado el tweet'})
                             return res.status(200).send({message: "Retweet Eliminado con Exito!!!"})
                         })
                      }else{
                         if(command.length>=3){
-                            console.log(command.length)
                             for(let i=3; i<command.length;i++){
                                 comentario = comentario + " " + command[i]
                             }
@@ -274,6 +278,8 @@ function retweet(req, res){
                         retweet.usuarioOriginal = findedTweet.usuario; 
                         retweet.nombreOriginal = findedTweet.nombreUsuario;
                         retweet.usuario = id;
+                        retweet.tweet = tweetId;
+                        Tweet.findOneAndUpdate({_id: tweetId},{retweet: encontrado._id},{new:true}).exec();
                         retweet.save((err, retweetGuardado)=>{
                             if(err) return res.status(500).send({ message: 'Error al guardar el tweet'})
                             if(retweetGuardado){
@@ -292,58 +298,6 @@ function retweet(req, res){
         })
     }    
 }
-
-// function retweet(req, res){
-//     var retweet = new Retweet();
-//     var params = req.body.commands;
-//     var command = params.split(' ');
-//     var id = req.user.sub;
-//     var tweetId = command[1];
-//     var comentario = command[2];
-
-//     if(command[1]){
-//         Usuario.findById(id, (err, userEncontrado) => {
-//             if(err) return res.status(404).send({ message: 'Error al encontrar al usuario'})
-//             if(!userEncontrado) return res.status(500).send({ message: 'EL usuario no existe'})
-//             if(command.length>=3){
-//                 for(let i=3; i<command.length;i++){
-//                     comentario = comentario + " " + command[i]
-//                 }
-//             }
-//             Retweet.find({usuario: id}, (err, encontrado) =>{
-//                 if(encontrado.length >=1){
-//                     Retweet.findOneAndDelete({usuario: id}, (err, retweetEliminado)=>{
-//                         if(err) return res.status(500).send({message: 'Error en la peticion del tweet'})
-//                         if(!retweetEliminado) return res.status(404).send({message: 'Error al eliminar el tweet'})
-//                         return res.status(200).send({message: "Retweet Eliminado con Exito!!!"})
-//                     })
-//                 }else{
-//                     Tweet.findOne({_id: tweetId}, (err, findedTweet) =>{
-//                         retweet.tweet = findedTweet.Descripcion;
-//                         retweet.comentario = comentario;
-//                         retweet.nombreRetweet = userEncontrado.user;
-//                         retweet.usuarioOriginal = findedTweet.usuario; 
-//                         retweet.nombreOriginal = findedTweet.nombreUsuario;
-//                         retweet.usuario = id;
-//                         retweet.save((err, retweetGuardado)=>{
-//                             if(err) return res.status(500).send({ message: 'Error al guardar el tweet'})
-//                             if(retweetGuardado){
-//                                 res.status(200).send({message: "Retweeteado con exito!!"})
-//                             }else{
-//                                 res.status(404).send({message: 'Fallo al hacer el retweet'})
-//                             }
-//                         })
-//                     })
-//                 }
-//             })
-//         })
-//     }else{
-//         res.status(200).send({
-//             message: 'Rellene todos los datos necesarios'
-//         })
-//     }    
-// }
-
 
 
 module.exports = {
